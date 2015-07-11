@@ -192,6 +192,8 @@ static const struct android_id_info android_ids[] = {
 
     { "sensors",       AID_SENSORS, },
 
+    { "sensors",       AID_SENSORS, },
+
     { "rfs",           AID_RFS, },
     { "rfs_shared",    AID_RFS_SHARED, },
 
