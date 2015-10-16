@@ -70,6 +70,9 @@ endif
 LOCAL_MULTILIB := both
 include $(BUILD_HOST_SHARED_LIBRARY)
 
+ifeq ($(TARGET_USES_MOTOROLA_LOG),true)
+LIBLOG_CFLAGS := -DMOTOROLA_LOG
+endif
 
 # Shared and static library for target
 # ========================================================

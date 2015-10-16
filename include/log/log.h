@@ -579,6 +579,11 @@ typedef enum {
     (__android_log_is_loggable(prio, tag, ANDROID_LOG_VERBOSE) != 0)
 #endif
 
+#ifdef MOTOROLA_LOG
+#define android_testLog(prio, tag) \
+    (__android_log_is_loggable(prio, tag, __android_log_loggable((prio), (tag))) != 0)
+#endif
+
 // TODO: remove these prototypes and their users
 #define android_writevLog(vec,num) do{}while(0)
 #define android_write1Log(str,len) do{}while (0)
