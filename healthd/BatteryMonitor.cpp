@@ -24,11 +24,13 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
+
 #include <batteryservice/BatteryService.h>
 #include <cutils/klog.h>
 #include <cutils/properties.h>
-#include <sys/types.h>
+#include <log/log_read.h>
 #include <utils/Errors.h>
 #include <utils/String8.h>
 #include <utils/Vector.h>
@@ -37,6 +39,7 @@
 #define POWER_SUPPLY_SYSFS_PATH "/sys/class/" POWER_SUPPLY_SUBSYSTEM
 #define FAKE_BATTERY_CAPACITY 42
 #define FAKE_BATTERY_TEMPERATURE 424
+#define ALWAYS_PLUGGED_CAPACITY 100
 
 namespace android {
 
@@ -201,6 +204,15 @@ bool BatteryMonitor::update(void) {
         mBatteryFixedTemperature :
         getIntField(mHealthdConfig->batteryTemperaturePath);
 
+    // For devices which do not have battery and are always plugged
+    // into power souce.
+    if (mAlwaysPluggedDevice) {
+        props.chargerAcOnline = true;
+        props.batteryPresent = true;
+        props.batteryStatus = BATTERY_STATUS_CHARGING;
+        props.batteryHealth = BATTERY_HEALTH_GOOD;
+    }
+
     const int SIZE = 128;
     char buf[SIZE];
     String8 btech;
@@ -307,10 +319,32 @@ bool BatteryMonitor::update(void) {
                  "battery none");
         }
 
-        KLOG_WARNING(LOG_TAG, "%s chg=%s%s%s\n", dmesgline,
-                     props.chargerAcOnline ? "a" : "",
-                     props.chargerUsbOnline ? "u" : "",
-                     props.chargerWirelessOnline ? "w" : "");
+        size_t len = strlen(dmesgline);
+        snprintf(dmesgline + len, sizeof(dmesgline) - len, " chg=%s%s%s",
+                 props.chargerAcOnline ? "a" : "",
+                 props.chargerUsbOnline ? "u" : "",
+                 props.chargerWirelessOnline ? "w" : "");
+
+        log_time realtime(CLOCK_REALTIME);
+        time_t t = realtime.tv_sec;
+        struct tm *tmp = gmtime(&t);
+        if (tmp) {
+            static const char fmt[] = " %Y-%m-%d %H:%M:%S.XXXXXXXXX UTC";
+            len = strlen(dmesgline);
+            if ((len < (sizeof(dmesgline) - sizeof(fmt) - 8)) // margin
+                    && strftime(dmesgline + len, sizeof(dmesgline) - len,
+                                fmt, tmp)) {
+                char *usec = strchr(dmesgline + len, 'X');
+                if (usec) {
+                    len = usec - dmesgline;
+                    snprintf(dmesgline + len, sizeof(dmesgline) - len,
+                             "%09u", realtime.tv_nsec);
+                    usec[9] = ' ';
+                }
+            }
+        }
+
+        KLOG_WARNING(LOG_TAG, "%s\n", dmesgline);
     }
 
     healthd_mode_ops->battery_update(&props);
@@ -550,8 +584,15 @@ void BatteryMonitor::init(struct healthd_config *hc) {
         closedir(dir);
     }
 
-    if (!mChargerNames.size())
+    // This indicates that there is no charger driver registered.
+    // Typically the case for devices which do not have a battery and
+    // and are always plugged into AC mains.
+    if (!mChargerNames.size()) {
         KLOG_ERROR(LOG_TAG, "No charger supplies found\n");
+        mBatteryFixedCapacity = ALWAYS_PLUGGED_CAPACITY;
+        mBatteryFixedTemperature = FAKE_BATTERY_TEMPERATURE;
+        mAlwaysPluggedDevice = true;
+    }
     if (!mBatteryDevicePresent) {
         KLOG_WARNING(LOG_TAG, "No battery devices found\n");
         hc->periodic_chores_interval_fast = -1;
