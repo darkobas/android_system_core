@@ -877,6 +877,7 @@ TEST(liblog, is_loggable) {
     property_set(key, hold[2]);
     property_set(key + base_offset, hold[3]);
 }
+
 static inline int32_t get4LE(const char* src)
 {
     return src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
@@ -892,7 +893,7 @@ TEST(liblog, android_errorWriteWithInfoLog__android_logger_list_read__typical) {
     pid_t pid = getpid();
 
     ASSERT_TRUE(NULL != (logger_list = android_logger_list_open(
-        LOG_ID_EVENTS,  O_RDONLY | O_NDELAY, 1000, pid)));
+        LOG_ID_EVENTS, ANDROID_LOG_RDONLY | ANDROID_LOG_NONBLOCK, 1000, pid)));
 
     ASSERT_LT(0, android_errorWriteWithInfoLog(
             TAG, SUBTAG, UID, max_payload_buf, DATA_LEN));
@@ -973,7 +974,7 @@ TEST(liblog, android_errorWriteWithInfoLog__android_logger_list_read__data_too_l
     pid_t pid = getpid();
 
     ASSERT_TRUE(NULL != (logger_list = android_logger_list_open(
-        LOG_ID_EVENTS,  O_RDONLY | O_NDELAY, 1000, pid)));
+        LOG_ID_EVENTS, ANDROID_LOG_RDONLY | ANDROID_LOG_NONBLOCK, 1000, pid)));
 
     ASSERT_LT(0, android_errorWriteWithInfoLog(
             TAG, SUBTAG, UID, max_payload_buf, DATA_LEN));
@@ -1060,7 +1061,7 @@ TEST(liblog, android_errorWriteWithInfoLog__android_logger_list_read__null_data)
     pid_t pid = getpid();
 
     ASSERT_TRUE(NULL != (logger_list = android_logger_list_open(
-        LOG_ID_EVENTS,  O_RDONLY | O_NDELAY, 1000, pid)));
+        LOG_ID_EVENTS, ANDROID_LOG_RDONLY | ANDROID_LOG_NONBLOCK, 1000, pid)));
 
     ASSERT_GT(0, android_errorWriteWithInfoLog(
             TAG, SUBTAG, UID, NULL, DATA_LEN));
@@ -1103,7 +1104,7 @@ TEST(liblog, android_errorWriteWithInfoLog__android_logger_list_read__subtag_too
     pid_t pid = getpid();
 
     ASSERT_TRUE(NULL != (logger_list = android_logger_list_open(
-        LOG_ID_EVENTS,  O_RDONLY | O_NDELAY, 1000, pid)));
+        LOG_ID_EVENTS, ANDROID_LOG_RDONLY | ANDROID_LOG_NONBLOCK, 1000, pid)));
 
     ASSERT_LT(0, android_errorWriteWithInfoLog(
             TAG, SUBTAG, UID, max_payload_buf, DATA_LEN));
@@ -1183,7 +1184,7 @@ TEST(liblog, android_errorWriteLog__android_logger_list_read__success) {
     pid_t pid = getpid();
 
     ASSERT_TRUE(NULL != (logger_list = android_logger_list_open(
-        LOG_ID_EVENTS,  O_RDONLY | O_NDELAY, 1000, pid)));
+        LOG_ID_EVENTS, ANDROID_LOG_RDONLY | ANDROID_LOG_NONBLOCK, 1000, pid)));
 
     ASSERT_LT(0, android_errorWriteLog(TAG, SUBTAG));
 
@@ -1240,7 +1241,7 @@ TEST(liblog, android_errorWriteLog__android_logger_list_read__null_subtag) {
     pid_t pid = getpid();
 
     ASSERT_TRUE(NULL != (logger_list = android_logger_list_open(
-        LOG_ID_EVENTS,  O_RDONLY | O_NDELAY, 1000, pid)));
+        LOG_ID_EVENTS, ANDROID_LOG_RDONLY | ANDROID_LOG_NONBLOCK, 1000, pid)));
 
     ASSERT_GT(0, android_errorWriteLog(TAG, NULL));
 
